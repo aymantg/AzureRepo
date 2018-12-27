@@ -1,0 +1,60 @@
+{
+	"name": "SalesOrderDetail",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ADWOLTP",
+			"type": "LinkedServiceReference"
+		},
+		"type": "AzureSqlTable",
+		"structure": [
+			{
+				"name": "SalesOrderID",
+				"type": "Int32"
+			},
+			{
+				"name": "SalesOrderDetailID",
+				"type": "Int32"
+			},
+			{
+				"name": "CarrierTrackingNumber",
+				"type": "String"
+			},
+			{
+				"name": "OrderQty",
+				"type": "Int16"
+			},
+			{
+				"name": "ProductID",
+				"type": "Int32"
+			},
+			{
+				"name": "SpecialOfferID",
+				"type": "Int32"
+			},
+			{
+				"name": "UnitPrice",
+				"type": "Decimal"
+			},
+			{
+				"name": "UnitPriceDiscount",
+				"type": "Decimal"
+			},
+			{
+				"name": "LineTotal",
+				"type": "Decimal"
+			},
+			{
+				"name": "rowguid",
+				"type": "Guid"
+			},
+			{
+				"name": "ModifiedDate",
+				"type": "DateTime"
+			}
+		],
+		"typeProperties": {
+			"tableName": "[Sales].[SalesOrderDetail]"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

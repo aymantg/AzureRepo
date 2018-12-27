@@ -1,0 +1,14 @@
+{
+	"name": "DWMigratedSalesDetail",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "DWMigrated",
+			"type": "LinkedServiceReference"
+		},
+		"type": "AzureSqlTable",
+		"typeProperties": {
+			"tableName": "[Sales].[SalesOrderDetail]"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

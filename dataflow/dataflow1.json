@@ -1,0 +1,32 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"sources": [
+			{
+				"dataset": {
+					"referenceName": "SalesOrderDetail",
+					"type": "DatasetReference"
+				},
+				"name": "ADWOLTP",
+				"script": "source(output(SalesOrderID as integer,SalesOrderDetailID as integer,CarrierTrackingNumber as string,OrderQty as short,ProductID as integer,SpecialOfferID as integer,UnitPrice as decimal(10,0),UnitPriceDiscount as decimal(10,0),LineTotal as decimal(10,0),rowguid as string,ModifiedDate as timestamp),allowSchemaDrift: true,validateSchema: false) ~> ADWOLTP"
+			}
+		],
+		"sinks": [
+			{
+				"dataset": {
+					"referenceName": "DWMigratedSalesDetail",
+					"type": "DatasetReference"
+				},
+				"name": "DWSalesDetailOut",
+				"script": "TotalCost sink(saveMode:'overwrite' , mapColumn(SalesOrderID,SalesOrderDetailID,CarrierTrackingNumber,OrderQty,ProductID,SpecialOfferID,UnitPrice,UnitPriceDiscount,LineTotal,rowguid,ModifiedDate,TotalCost)) ~> DWSalesDetailOut",
+				"maxConcurrentConnections": 1
+			}
+		],
+		"transformations": [
+			{
+				"name": "TotalCost",
+				"script": "ADWOLTP derive(TotalCost = multiply(UnitPrice,OrderQty)) ~> TotalCost"
+			}
+		]
+	}
+}
