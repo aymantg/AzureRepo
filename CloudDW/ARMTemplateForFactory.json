@@ -1,0 +1,175 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory Name",
+			"defaultValue": "CloudDW"
+		},
+		"ADWOLTP_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'ADWOLTP'"
+		},
+		"DWMigrated_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'DWMigrated'"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DWMigratedSalesDetail')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-07-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "DWMigrated",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"typeProperties": {
+					"tableName": "[concat('[', 'Sales].[SalesOrderDetail]')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DWMigrated')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SalesOrderDetail')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-07-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADWOLTP",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"structure": [
+					{
+						"name": "SalesOrderID",
+						"type": "Int32"
+					},
+					{
+						"name": "SalesOrderDetailID",
+						"type": "Int32"
+					},
+					{
+						"name": "CarrierTrackingNumber",
+						"type": "String"
+					},
+					{
+						"name": "OrderQty",
+						"type": "Int16"
+					},
+					{
+						"name": "ProductID",
+						"type": "Int32"
+					},
+					{
+						"name": "SpecialOfferID",
+						"type": "Int32"
+					},
+					{
+						"name": "UnitPrice",
+						"type": "Decimal"
+					},
+					{
+						"name": "UnitPriceDiscount",
+						"type": "Decimal"
+					},
+					{
+						"name": "LineTotal",
+						"type": "Decimal"
+					},
+					{
+						"name": "rowguid",
+						"type": "Guid"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "DateTime"
+					}
+				],
+				"typeProperties": {
+					"tableName": "[concat('[', 'Sales].[SalesOrderDetail]')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ADWOLTP')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ADWOLTP')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-07-01-preview",
+			"properties": {
+				"description": "Adventure Works OLTP Database",
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('ADWOLTP_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DWMigrated')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-07-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('DWMigrated_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-07-01-preview",
+			"properties": {
+				"sources": [
+					{
+						"dataset": {
+							"referenceName": "SalesOrderDetail",
+							"type": "DatasetReference"
+						},
+						"name": "ADWOLTP",
+						"script": "source(output(SalesOrderID as integer,SalesOrderDetailID as integer,CarrierTrackingNumber as string,OrderQty as short,ProductID as integer,SpecialOfferID as integer,UnitPrice as decimal(10,0),UnitPriceDiscount as decimal(10,0),LineTotal as decimal(10,0),rowguid as string,ModifiedDate as timestamp),allowSchemaDrift: true,validateSchema: false) ~> ADWOLTP",
+						"typeProperties": {}
+					}
+				],
+				"sinks": [
+					{
+						"dataset": {
+							"referenceName": "DWMigratedSalesDetail",
+							"type": "DatasetReference"
+						},
+						"name": "DWSalesDetailOut",
+						"script": "TotalCost sink(saveMode:'overwrite' , mapColumn(SalesOrderID,SalesOrderDetailID,CarrierTrackingNumber,OrderQty,ProductID,SpecialOfferID,UnitPrice,UnitPriceDiscount,LineTotal,rowguid,ModifiedDate,TotalCost)) ~> DWSalesDetailOut",
+						"maxConcurrentConnections": 1
+					}
+				],
+				"transformations": [
+					{
+						"name": "TotalCost",
+						"script": "ADWOLTP derive(TotalCost = multiply(UnitPrice,OrderQty)) ~> TotalCost"
+					}
+				],
+				"parameters": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/SalesOrderDetail')]",
+				"[concat(variables('factoryId'), '/datasets/DWMigratedSalesDetail')]"
+			]
+		}
+	]
+}
